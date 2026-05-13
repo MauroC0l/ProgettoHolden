@@ -1,0 +1,8 @@
+Entra nel tuo ambiente virtual con il comando:
+venv\Scripts\activate 
+
+Installa le dipendenze con il comando:
+pip install -r requirements.txt
+
+Esegui il comando:
+streamlit run app.py
