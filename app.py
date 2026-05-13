@@ -4,14 +4,45 @@ import plotly.express as px
 import os
 
 # Configurazione Pagina
-st.set_page_config(page_title="Mappa Metamoderna", layout="wide")
+st.set_page_config(page_title="Mappa Metamoderna", page_icon="🎨", layout="wide")
+
+# 4. Grafica elegante e moderna (CSS personalizzato)
+custom_css = """
+<style>
+    /* Nasconde il menu di Streamlit per un look più pulito come una vera web app */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    
+    /* Rende gli slider e gli input più spessi e moderni */
+    div[data-baseweb="slider"] {
+        padding-top: 15px !important;
+        padding-bottom: 15px !important;
+    }
+    .stNumberInput input {
+        text-align: center;
+        font-weight: bold;
+        font-size: 1.1rem;
+    }
+    
+    /* Arrotonda i bordi dei form */
+    div[data-testid="stForm"] {
+        border-radius: 15px;
+        border: 1px solid rgba(250, 250, 250, 0.2);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+</style>
+"""
+st.markdown(custom_css, unsafe_allow_html=True)
 
 # File del database
 DB_FILE = "data.csv"
 
 def load_data():
     if os.path.exists(DB_FILE):
-        return pd.read_csv(DB_FILE)
+        try:
+            return pd.read_csv(DB_FILE)
+        except pd.errors.EmptyDataError:
+            return pd.DataFrame(columns=["nome", "tipo", "ironia", "post_ironia", "sincerita", "voti"])
     else:
         return pd.DataFrame(columns=["nome", "tipo", "ironia", "post_ironia", "sincerita", "voti"])
 
@@ -24,63 +55,63 @@ df = load_data()
 st.title("🎨 Mappa Culturale Ternaria")
 st.markdown("Inserisci i tuoi contenuti preferiti e posizionali nel triangolo tra **Ironia**, **Post-Ironia** e **Sincerità**.")
 
-# Layout a due colonne: Input e Voto a sinistra, Grafico a destra
-col1, col2 = st.columns([1, 2])
+# Layout a due colonne
+col1, col2 = st.columns([1, 2], gap="large")
 
 with col1:
-    st.subheader("➕ Aggiungi un nuovo oggetto")
+    st.subheader("➕ Aggiungi o Vota un oggetto")
+    st.markdown("Se inserisci un nome già esistente, il tuo voto verrà **unito** a quello precedente.")
+    
     with st.form("add_form", clear_on_submit=True):
-        nuovo_nome = st.text_input("Nome (Film, Libro, Serie...)")
-        tipo = st.selectbox("Categoria", ["Film", "Libro", "Serie TV", "Altro"])
+        nuovo_nome = st.text_input("Nome (es. Matrix, The Office...)").strip()
+        tipo = st.selectbox("Categoria", ["Film", "Libro", "Serie TV", "Videogioco", "Altro"])
         
-        st.write("Distribuisci 100 punti tra le caratteristiche:")
-        v_ironia = st.slider("Ironia", 0, 100, 33)
-        v_post_ironia = st.slider("Post-Ironia", 0, 100, 33)
-        v_sincerita = st.slider("Sincerità", 0, 100, 34)
+        st.write("Distribuisci i punteggi (puoi digitare o usare i tasti):")
+        # 3. Input migliorati: permettono inserimento manuale da tastiera e sono più larghi
+        v_ironia = st.number_input("Ironia", min_value=0, max_value=100, value=33, step=1)
+        v_post_ironia = st.number_input("Post-Ironia", min_value=0, max_value=100, value=33, step=1)
+        v_sincerita = st.number_input("Sincerità", min_value=0, max_value=100, value=34, step=1)
         
-        submitted = st.form_submit_state = st.form_submit_button("Aggiungi alla mappa")
+        submitted = st.form_submit_button("Inserisci nella mappa", use_container_width=True)
         
         if submitted:
-            totale = v_ironia + v_post_ironia + v_sincerita
-            # Normalizzazione per sicurezza (deve fare 100)
-            n_i = (v_ironia / totale) * 100
-            n_p = (v_post_ironia / totale) * 100
-            n_s = (v_sincerita / totale) * 100
-            
-            new_row = {"nome": nuovo_nome, "tipo": tipo, "ironia": n_i, "post_ironia": n_p, "sincerita": n_s, "voti": 1}
-            df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-            save_data(df)
-            st.success(f"{nuovo_nome} aggiunto!")
-            st.rerun()
-
-    st.divider()
-
-    st.subheader("🗳️ Vota un oggetto esistente")
-    if not df.empty:
-        oggetto_da_votare = st.selectbox("Scegli cosa votare", df["nome"].unique())
-        with st.form("vote_form", clear_on_submit=True):
-            vi_v = st.slider("Ironia", 0, 100, 33, key="vi")
-            vp_v = st.slider("Post-Ironia", 0, 100, 33, key="vp")
-            vs_v = st.slider("Sincerità", 0, 100, 34, key="vs")
-            
-            voted = st.form_submit_button("Invia Voto")
-            
-            if voted:
-                idx = df[df["nome"] == oggetto_da_votare].index[0]
-                n_voti = df.at[idx, "voti"]
-                
-                # Calcolo nuova media pesata
-                tot_v = vi_v + vp_v + vs_v
-                df.at[idx, "ironia"] = ((df.at[idx, "ironia"] * n_voti) + (vi_v/tot_v*100)) / (n_voti + 1)
-                df.at[idx, "post_ironia"] = ((df.at[idx, "post_ironia"] * n_voti) + (vp_v/tot_v*100)) / (n_voti + 1)
-                df.at[idx, "sincerita"] = ((df.at[idx, "sincerita"] * n_voti) + (vs_v/tot_v*100)) / (n_voti + 1)
-                df.at[idx, "voti"] = n_voti + 1
-                
-                save_data(df)
-                st.success("Voto registrato!")
-                st.rerun()
-    else:
-        st.info("Aggiungi prima un oggetto per poter votare.")
+            if nuovo_nome == "":
+                st.error("Inserisci un nome valido!")
+            else:
+                totale = v_ironia + v_post_ironia + v_sincerita
+                if totale == 0:
+                    st.error("Il totale non può essere zero.")
+                else:
+                    # Normalizzazione
+                    n_i = (v_ironia / totale) * 100
+                    n_p = (v_post_ironia / totale) * 100
+                    n_s = (v_sincerita / totale) * 100
+                    
+                    # 5. Logica Anti-Duplicato
+                    # Controlla se il nome esiste già (ignorando maiuscole/minuscole)
+                    nome_esiste = df["nome"].str.lower() == nuovo_nome.lower()
+                    
+                    if nome_esiste.any():
+                        # Aggiorna elemento esistente
+                        idx = df[nome_esiste].index[0]
+                        n_voti = df.at[idx, "voti"]
+                        
+                        df.at[idx, "ironia"] = ((df.at[idx, "ironia"] * n_voti) + n_i) / (n_voti + 1)
+                        df.at[idx, "post_ironia"] = ((df.at[idx, "post_ironia"] * n_voti) + n_p) / (n_voti + 1)
+                        df.at[idx, "sincerita"] = ((df.at[idx, "sincerita"] * n_voti) + n_s) / (n_voti + 1)
+                        df.at[idx, "voti"] = n_voti + 1
+                        
+                        # Ripristina la maiuscola corretta usata in precedenza per bellezza
+                        nome_reale = df.at[idx, "nome"]
+                        st.success(f"✅ '{nome_reale}' esisteva già! Ho aggiornato la media con il tuo voto.")
+                    else:
+                        # Crea nuovo elemento
+                        new_row = {"nome": nuovo_nome, "tipo": tipo, "ironia": n_i, "post_ironia": n_p, "sincerita": n_s, "voti": 1}
+                        df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+                        st.success(f"🎉 '{nuovo_nome}' aggiunto per la prima volta!")
+                    
+                    save_data(df)
+                    st.rerun()
 
 with col2:
     st.subheader("📊 La Mappa")
@@ -92,24 +123,36 @@ with col2:
             c="sincerita", 
             hover_name="nome", 
             color="tipo",
-            size="voti", # Più voti ha, più il pallino è grande
-            size_max=15,
+            size="voti",
+            size_max=22, # Pallini un po' più grandi
             labels={"ironia": "Ironia", "post_ironia": "Post-Ironia", "sincerita": "Sincerità"}
         )
         
+        # 1. e 2. Triangolo pulito e pallini sopra
+        fig.update_traces(
+            marker=dict(
+                line=dict(width=2, color='DarkSlateGrey'), # Bordo scuro sui pallini per staccarli dallo sfondo
+                opacity=0.9
+            )
+        )
+        
         fig.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)", # Sfondo trasparente
+            plot_bgcolor="rgba(0,0,0,0)",
             ternary=dict(
                 sum=100,
-                aaxis=dict(title="Ironia", min=0),
-                baxis=dict(title="Post-Ironia", min=0),
-                caxis=dict(title="Sincerità", min=0),
+                bgcolor="rgba(0,0,0,0)", # Rimuove lo sfondo interno del triangolo
+                aaxis=dict(title="Ironia", min=0, showgrid=False, showline=True, linewidth=2, linecolor='gray'),
+                baxis=dict(title="Post-Ironia", min=0, showgrid=False, showline=True, linewidth=2, linecolor='gray'),
+                caxis=dict(title="Sincerità", min=0, showgrid=False, showline=True, linewidth=2, linecolor='gray'),
             ),
-            height=700
+            height=650,
+            margin=dict(l=20, r=20, t=40, b=20) # Margini ottimizzati
         )
         
         st.plotly_chart(fig, use_container_width=True)
         
-        st.write("### Tabella Riepilogativa")
-        st.dataframe(df[["nome", "tipo", "voti"]].sort_values(by="voti", ascending=False))
+        with st.expander("📄 Visualizza Tabella Dati Completa"):
+            st.dataframe(df.sort_values(by="voti", ascending=False), use_container_width=True)
     else:
-        st.warning("Nessun dato presente. Inizia aggiungendo un contenuto a sinistra.")
+        st.info("👈 Nessun dato presente. Inizia aggiungendo un contenuto nel pannello di sinistra.")
