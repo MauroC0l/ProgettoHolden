@@ -155,7 +155,7 @@ with col1:
                 st.error("Inserisci un nome valido!")
             # 2. Errore bloccante se la somma non fa 100
             elif totale != 100:
-                st.error(f"❌ Errore: La somma delle tre caratteristiche deve essere esattamente 100! Attualmente hai inserito {totale}.")
+                st.error(f"❌ Errore: La somma delle tre caratteristiche deve essere esattamente 100! Hai inserito {totale}.")
             else:
                 # I voti inseriti sono già percentuali corrette perché la somma è 100
                 n_i = v_ironia
