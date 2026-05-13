@@ -82,16 +82,25 @@ with col2:
             )
         )
         
-        # 1. Nomi agli angoli evidenziati usando i titoli degli assi in grassetto e più grandi
+       # 1. Nomi agli angoli evidenziati (sintassi corretta per le nuove versioni di Plotly)
         fig.update_layout(
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
             ternary=dict(
                 sum=100,
                 bgcolor="rgba(0,0,0,0)",
-                aaxis=dict(title="<b>IRONIA</b>", titlefont=dict(size=18, color="#ff4b4b"), min=0, showgrid=False, showline=True, linewidth=2, linecolor='gray'),
-                baxis=dict(title="<b>POST-IRONIA</b>", titlefont=dict(size=18, color="#4b4bff"), min=0, showgrid=False, showline=True, linewidth=2, linecolor='gray'),
-                caxis=dict(title="<b>SINCERITÀ</b>", titlefont=dict(size=18, color="#4bff4b"), min=0, showgrid=False, showline=True, linewidth=2, linecolor='gray'),
+                aaxis=dict(
+                    title=dict(text="<b>IRONIA</b>", font=dict(size=18, color="#ff4b4b")), 
+                    min=0, showgrid=False, showline=True, linewidth=2, linecolor='gray'
+                ),
+                baxis=dict(
+                    title=dict(text="<b>POST-IRONIA</b>", font=dict(size=18, color="#4b4bff")), 
+                    min=0, showgrid=False, showline=True, linewidth=2, linecolor='gray'
+                ),
+                caxis=dict(
+                    title=dict(text="<b>SINCERITÀ</b>", font=dict(size=18, color="#4bff4b")), 
+                    min=0, showgrid=False, showline=True, linewidth=2, linecolor='gray'
+                ),
             ),
             height=650,
             margin=dict(l=40, r=40, t=60, b=40) 
