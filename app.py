@@ -19,7 +19,7 @@ st.markdown(custom_css, unsafe_allow_html=True)
 
 # ----------------- NUOVO DATABASE GOOGLE SHEETS -----------------
 # Sostituisci questo con il VERO link del tuo foglio Google dello Step 1
-SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/IL_TUO_LINK_LUNGHISSIMO/edit#gid=0"
+SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1w8UZ1FHzw8ENbRv_uFyeLYpGcjbvWR44fNGZycFPGTI/edit?gid=0#gid=0"
 
 # Crea la connessione con i Segreti che hai salvato su Streamlit
 conn = st.connection("gsheets", type=GSheetsConnection)
