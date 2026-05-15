@@ -1,179 +1,174 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from streamlit_gsheets import GSheetsConnection  # <--- NUOVA LIBRERIA
+from streamlit_gsheets import GSheetsConnection
 
-# Configurazione Pagina
-st.set_page_config(page_title="Mappa Metamoderna", page_icon="🎨", layout="wide")
+# 1. Configurazione della Pagina (Titolo e Layout)
+st.set_page_config(
+    page_title="Metamodern Plotter",
+    page_icon="🎨",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
-custom_css = """
+# 2. CSS Avanzato per un look "All'avanguardia"
+st.markdown("""
 <style>
+    /* Sfondo e Font */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+    html, body, [class*="css"]  {
+        font-family: 'Inter', sans-serif;
+    }
+
+    /* Effetto Glassmorphism per i contenitori */
+    div[data-testid="stForm"], .stDataFrame, .stExpander {
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(10px) !important;
+        border-radius: 20px !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        padding: 20px !important;
+    }
+
+    /* Animazione per i titoli */
+    .main-title {
+        font-size: 3rem !important;
+        font-weight: 700;
+        background: linear-gradient(90deg, #ff4b4b, #4b4bff, #4bff4b);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Pulsanti Moderni */
+    .stButton>button {
+        width: 100%;
+        border-radius: 12px !important;
+        background: linear-gradient(135deg, #6e8efb, #a777e3) !important;
+        color: white !important;
+        border: none !important;
+        font-weight: bold !important;
+        transition: 0.3s all !important;
+    }
+    .stButton>button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2) !important;
+    }
+
+    /* Nasconde elementi superflui */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    div[data-baseweb="slider"] { padding-top: 15px !important; padding-bottom: 15px !important; }
-    .stNumberInput input { text-align: center; font-weight: bold; font-size: 1.1rem; }
-    div[data-testid="stForm"] { border-radius: 15px; border: 1px solid rgba(250, 250, 250, 0.2); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
 </style>
-"""
-st.markdown(custom_css, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
-# ----------------- NUOVO DATABASE GOOGLE SHEETS -----------------
-# Sostituisci questo con il VERO link del tuo foglio Google dello Step 1
+# 3. Gestione Database (Google Sheets)
 SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1w8UZ1FHzw8ENbRv_uFyeLYpGcjbvWR44fNGZycFPGTI/edit?gid=0#gid=0"
-
-# Crea la connessione con i Segreti che hai salvato su Streamlit
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 def load_data():
     try:
-        # Legge i dati da Google Sheets
-        df = conn.read(spreadsheet=SPREADSHEET_URL, usecols=[0,1,2,3,4,5])
-        # Se il foglio è totalmente vuoto, crea le colonne
+        # Importante: ttl=0 forza l'app a leggere i dati reali ogni volta, risolvendo il tuo problema
+        df = conn.read(spreadsheet=SPREADSHEET_URL, ttl=0)
         if df.empty or df.isna().all().all():
             return pd.DataFrame(columns=["nome", "tipo", "ironia", "post_ironia", "sincerita", "voti"])
         return df
-    except Exception as e:
+    except:
         return pd.DataFrame(columns=["nome", "tipo", "ironia", "post_ironia", "sincerita", "voti"])
 
-def save_data(df):
-    # Aggiorna il foglio Google con il nuovo dataframe
-    conn.update(spreadsheet=SPREADSHEET_URL, data=df)
+def save_data(new_df):
+    conn.update(spreadsheet=SPREADSHEET_URL, data=new_df)
 
-# Inizializzazione dati
+# Caricamento iniziale
 df = load_data()
-# -----------------------------------------------------------------
 
+# 4. Header
+st.markdown('<p class="main-title">🎨 Metamodern Plotter</p>', unsafe_allow_html=True)
+st.markdown("Visualizza l'anima dei media nel triangolo tra **Ironia**, **Post-Ironia** e **Sincerità**.")
 
-st.title("🎨 Mappa Culturale Ternaria")
-st.markdown("Inserisci i tuoi contenuti preferiti e posizionali nel triangolo tra **Ironia**, **Post-Ironia** e **Sincerità**.")
-
-# Layout a due colonne
+# 5. Logica di Interazione
 col1, col2 = st.columns([1, 2], gap="large")
 
-# Variabili per gestire il click sulla mappa
+# Variabili di stato per il click
 selected_nome = ""
 selected_tipo = "Film"
 
-# Disegniamo PRIMA la mappa (col2) per catturare il click dell'utente
 with col2:
-    st.subheader("📊 La Mappa")
+    st.subheader("📊 Mappa Culturale")
     if not df.empty:
+        # Creazione Grafico Ternario
         fig = px.scatter_ternary(
-            df, 
-            a="ironia", 
-            b="post_ironia", 
-            c="sincerita", 
-            hover_name="nome", 
-            color="tipo",
-            size="voti",
-            size_max=22,
-            labels={"ironia": "Ironia", "post_ironia": "Post-Ironia", "sincerita": "Sincerità"}
+            df, a="ironia", b="post_ironia", c="sincerita",
+            hover_name="nome", color="tipo", size="voti", size_max=25,
+            color_discrete_sequence=px.colors.qualitative.Pastel,
+            template="plotly_dark"
         )
         
-        fig.update_traces(
-            marker=dict(
-                line=dict(width=2, color='DarkSlateGrey'),
-                opacity=0.9
-            )
-        )
+        fig.update_traces(marker=dict(line=dict(width=2, color='white'), opacity=0.8))
         
-       # 1. Nomi agli angoli evidenziati (sintassi corretta per le nuove versioni di Plotly)
         fig.update_layout(
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
             ternary=dict(
                 sum=100,
-                bgcolor="rgba(0,0,0,0)",
-                aaxis=dict(
-                    title=dict(text="<b>IRONIA</b>", font=dict(size=18, color="#ff4b4b")), 
-                    min=0, showgrid=False, showline=True, linewidth=2, linecolor='gray'
-                ),
-                baxis=dict(
-                    title=dict(text="<b>POST-IRONIA</b>", font=dict(size=18, color="#4b4bff")), 
-                    min=0, showgrid=False, showline=True, linewidth=2, linecolor='gray'
-                ),
-                caxis=dict(
-                    title=dict(text="<b>SINCERITÀ</b>", font=dict(size=18, color="#4bff4b")), 
-                    min=0, showgrid=False, showline=True, linewidth=2, linecolor='gray'
-                ),
+                aaxis=dict(title="<b>IRONIA</b>", titlefont=dict(size=18, color="#ff4b4b"), min=0, showgrid=False),
+                baxis=dict(title="<b>POST-IRONIA</b>", titlefont=dict(size=18, color="#4b4bff"), min=0, showgrid=False),
+                caxis=dict(title="<b>SINCERITÀ</b>", titlefont=dict(size=18, color="#4bff4b"), min=0, showgrid=False),
             ),
-            height=650,
-            margin=dict(l=40, r=40, t=60, b=40) 
+            margin=dict(l=50, r=50, t=50, b=50)
         )
+
+        # Gestione Click
+        event = st.plotly_chart(fig, use_container_width=True, on_select="rerun", selection_mode="points", key="mappa")
         
-        # 3. Rendiamo la mappa cliccabile catturando l'evento di selezione
-        event = st.plotly_chart(fig, use_container_width=True, on_select="rerun", selection_mode="points", key="mappa_ternaria")
-        
-        # Estraiamo il nome del punto cliccato
         if event and event.get("selection") and event["selection"].get("points"):
             selected_nome = event["selection"]["points"][0].get("hovertext", "")
-            if selected_nome:
-                # Troviamo la categoria associata per pre-compilarla
-                match = df[df["nome"] == selected_nome]
-                if not match.empty:
-                    selected_tipo = match.iloc[0]["tipo"]
-        
-        with st.expander("📄 Visualizza Tabella Dati Completa"):
+            match = df[df["nome"] == selected_nome]
+            if not match.empty:
+                selected_tipo = match.iloc[0]["tipo"]
+
+        with st.expander("📄 Archivio Dati"):
             st.dataframe(df.sort_values(by="voti", ascending=False), use_container_width=True)
     else:
-        st.info("👈 Nessun dato presente. Inizia aggiungendo un contenuto nel pannello di sinistra.")
+        st.info("La mappa è ancora vuota. Aggiungi il primo contenuto!")
 
-# Disegniamo DOPO il modulo (col1) così può usare i dati del click
 with col1:
-    st.subheader("➕ Aggiungi o Vota")
-    
-    if selected_nome:
-        st.info(f"📍 Hai cliccato su **{selected_nome}**. Inserisci il tuo voto per aggiornare la media.")
-    else:
-        st.markdown("Clicca un punto sulla mappa per votarlo, oppure compila i campi per un **nuovo inserimento**.")
-    
-    with st.form("add_form", clear_on_submit=False):
-        # I campi si riempiono automaticamente se selected_nome non è vuoto
-        nuovo_nome = st.text_input("Nome (es. Matrix, The Office...)", value=selected_nome).strip()
-        
-        options = ["Film", "Libro", "Serie TV", "Videogioco", "Altro"]
-        idx_tipo = options.index(selected_tipo) if selected_tipo in options else 0
-        tipo = st.selectbox("Categoria", options, index=idx_tipo)
-        
-        st.write("Distribuisci **esattamente 100 punti**:")
-        # 4. I valori di default sono impostati a 0
-        v_ironia = st.number_input("Ironia", min_value=0, max_value=100, value=0, step=1)
-        v_post_ironia = st.number_input("Post-Ironia", min_value=0, max_value=100, value=0, step=1)
-        v_sincerita = st.number_input("Sincerità", min_value=0, max_value=100, value=0, step=1)
-        
-        submitted = st.form_submit_button("Registra Voto", use_container_width=True)
-        
-        if submitted:
-            totale = v_ironia + v_post_ironia + v_sincerita
+    st.subheader("✏️ Contribuisci")
+    with st.container():
+        with st.form("vote_form", clear_on_submit=True):
+            nome_input = st.text_input("Titolo dell'opera", value=selected_nome, placeholder="Es. Interstellar").strip()
+            tipo_input = st.selectbox("Categoria", ["Film", "Libro", "Serie TV", "Videogioco", "Musica", "Altro"], 
+                                      index=["Film", "Libro", "Serie TV", "Videogioco", "Musica", "Altro"].index(selected_tipo))
             
-            if nuovo_nome == "":
-                st.error("Inserisci un nome valido!")
-            # 2. Errore bloccante se la somma non fa 100
-            elif totale != 100:
-                st.error(f"❌ Errore: La somma delle tre caratteristiche deve essere esattamente 100! Hai inserito {totale}.")
-            else:
-                # I voti inseriti sono già percentuali corrette perché la somma è 100
-                n_i = v_ironia
-                n_p = v_post_ironia
-                n_s = v_sincerita
-                
-                nome_esiste = df["nome"].str.lower() == nuovo_nome.lower()
-                
-                if nome_esiste.any():
-                    idx = df[nome_esiste].index[0]
-                    n_voti = df.at[idx, "voti"]
-                    
-                    df.at[idx, "ironia"] = ((df.at[idx, "ironia"] * n_voti) + n_i) / (n_voti + 1)
-                    df.at[idx, "post_ironia"] = ((df.at[idx, "post_ironia"] * n_voti) + n_p) / (n_voti + 1)
-                    df.at[idx, "sincerita"] = ((df.at[idx, "sincerita"] * n_voti) + n_s) / (n_voti + 1)
-                    df.at[idx, "voti"] = n_voti + 1
-                    
-                    nome_reale = df.at[idx, "nome"]
-                    st.success(f"✅ Voto registrato per '{nome_reale}'. La media è stata aggiornata.")
+            st.write("---")
+            st.markdown("**Bilanciamento (Somma = 100)**")
+            v_i = st.number_input("Quota Ironia", min_value=0, max_value=100, value=0)
+            v_p = st.number_input("Quota Post-Ironia", min_value=0, max_value=100, value=0)
+            v_s = st.number_input("Quota Sincerità", min_value=0, max_value=100, value=0)
+            
+            submitted = st.form_submit_button("REGISTRA VOTO")
+
+            if submitted:
+                totale = v_i + v_p + v_s
+                if not nome_input:
+                    st.warning("Inserisci un nome!")
+                elif totale != 100:
+                    st.error(f"La somma deve essere 100! (Totale attuale: {totale})")
                 else:
-                    new_row = {"nome": nuovo_nome, "tipo": tipo, "ironia": n_i, "post_ironia": n_p, "sincerita": n_s, "voti": 1}
-                    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-                    st.success(f"🎉 '{nuovo_nome}' aggiunto per la prima volta!")
-                
-                save_data(df)
-                st.rerun()
+                    # Logica Aggiornamento/Inserimento
+                    nome_esiste = df["nome"].str.lower() == nome_input.lower()
+                    if nome_esiste.any():
+                        idx = df[nome_esiste].index[0]
+                        count = df.at[idx, "voti"]
+                        df.at[idx, "ironia"] = ((df.at[idx, "ironia"] * count) + v_i) / (count + 1)
+                        df.at[idx, "post_ironia"] = ((df.at[idx, "post_ironia"] * count) + v_p) / (count + 1)
+                        df.at[idx, "sincerita"] = ((df.at[idx, "sincerita"] * count) + v_s) / (count + 1)
+                        df.at[idx, "voti"] = count + 1
+                    else:
+                        new_row = pd.DataFrame([{"nome": nome_input, "tipo": tipo_input, "ironia": v_i, "post_ironia": v_p, "sincerita": v_s, "voti": 1}])
+                        df = pd.concat([df, new_row], ignore_index=True)
+                    
+                    save_data(df)
+                    st.balloons()
+                    st.rerun()
+
+st.markdown("---")
+st.caption("Creato per il Progetto Holden • Dati salvati su Google Cloud")
