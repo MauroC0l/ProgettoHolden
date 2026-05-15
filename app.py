@@ -109,9 +109,18 @@ with col2:
             plot_bgcolor="rgba(0,0,0,0)",
             ternary=dict(
                 sum=100,
-                aaxis=dict(title="<b>IRONIA</b>", titlefont=dict(size=18, color="#ff4b4b"), min=0, showgrid=False),
-                baxis=dict(title="<b>POST-IRONIA</b>", titlefont=dict(size=18, color="#4b4bff"), min=0, showgrid=False),
-                caxis=dict(title="<b>SINCERITÀ</b>", titlefont=dict(size=18, color="#4bff4b"), min=0, showgrid=False),
+                aaxis=dict(
+                    title=dict(text="<b>IRONIA</b>", font=dict(size=18, color="#ff4b4b")), 
+                    min=0, showgrid=False
+                ),
+                baxis=dict(
+                    title=dict(text="<b>POST-IRONIA</b>", font=dict(size=18, color="#4b4bff")), 
+                    min=0, showgrid=False
+                ),
+                caxis=dict(
+                    title=dict(text="<b>SINCERITÀ</b>", font=dict(size=18, color="#4bff4b")), 
+                    min=0, showgrid=False
+                ),
             ),
             margin=dict(l=50, r=50, t=50, b=50)
         )
