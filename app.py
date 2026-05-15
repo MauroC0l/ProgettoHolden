@@ -1,53 +1,48 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import os
+from streamlit_gsheets import GSheetsConnection  # <--- NUOVA LIBRERIA
 
 # Configurazione Pagina
-st.set_page_config(page_title="Sondaggio Holden", page_icon="🎨", layout="wide")
+st.set_page_config(page_title="Mappa Metamoderna", page_icon="🎨", layout="wide")
 
-# Grafica elegante e moderna (CSS personalizzato)
 custom_css = """
 <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    
-    div[data-baseweb="slider"] {
-        padding-top: 15px !important;
-        padding-bottom: 15px !important;
-    }
-    .stNumberInput input {
-        text-align: center;
-        font-weight: bold;
-        font-size: 1.1rem;
-    }
-    
-    div[data-testid="stForm"] {
-        border-radius: 15px;
-        border: 1px solid rgba(250, 250, 250, 0.2);
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
+    div[data-baseweb="slider"] { padding-top: 15px !important; padding-bottom: 15px !important; }
+    .stNumberInput input { text-align: center; font-weight: bold; font-size: 1.1rem; }
+    div[data-testid="stForm"] { border-radius: 15px; border: 1px solid rgba(250, 250, 250, 0.2); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
 </style>
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
-# File del database
-DB_FILE = "data.csv"
+# ----------------- NUOVO DATABASE GOOGLE SHEETS -----------------
+# Sostituisci questo con il VERO link del tuo foglio Google dello Step 1
+SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/IL_TUO_LINK_LUNGHISSIMO/edit#gid=0"
+
+# Crea la connessione con i Segreti che hai salvato su Streamlit
+conn = st.connection("gsheets", type=GSheetsConnection)
 
 def load_data():
-    if os.path.exists(DB_FILE):
-        try:
-            return pd.read_csv(DB_FILE)
-        except pd.errors.EmptyDataError:
+    try:
+        # Legge i dati da Google Sheets
+        df = conn.read(spreadsheet=SPREADSHEET_URL, usecols=[0,1,2,3,4,5])
+        # Se il foglio è totalmente vuoto, crea le colonne
+        if df.empty or df.isna().all().all():
             return pd.DataFrame(columns=["nome", "tipo", "ironia", "post_ironia", "sincerita", "voti"])
-    else:
+        return df
+    except Exception as e:
         return pd.DataFrame(columns=["nome", "tipo", "ironia", "post_ironia", "sincerita", "voti"])
 
 def save_data(df):
-    df.to_csv(DB_FILE, index=False)
+    # Aggiorna il foglio Google con il nuovo dataframe
+    conn.update(spreadsheet=SPREADSHEET_URL, data=df)
 
 # Inizializzazione dati
 df = load_data()
+# -----------------------------------------------------------------
+
 
 st.title("🎨 Mappa Culturale Ternaria")
 st.markdown("Inserisci i tuoi contenuti preferiti e posizionali nel triangolo tra **Ironia**, **Post-Ironia** e **Sincerità**.")
