@@ -33,7 +33,7 @@ st.markdown("""
     .main-title {
         font-size: 3rem !important;
         font-weight: 700;
-        background: linear-gradient(90deg, #ff4b4b, #4b4bff, #4bff4b);
+        background: linear-gradient(90deg, #ff8c00, #ffb347, #ffcc00);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         margin-bottom: 0.5rem;
@@ -43,7 +43,7 @@ st.markdown("""
     .stButton>button {
         width: 100%;
         border-radius: 12px !important;
-        background: linear-gradient(135deg, #6e8efb, #a777e3) !important;
+        background: linear-gradient(135deg, #ff8c00, #ff4500) !important;
         color: white !important;
         border: none !important;
         font-weight: bold !important;
@@ -70,6 +70,18 @@ def load_data():
         df = conn.read(spreadsheet=SPREADSHEET_URL, ttl=0)
         if df.empty or df.isna().all().all():
             return pd.DataFrame(columns=["nome", "tipo", "ironia", "post_ironia", "sincerita", "voti"])
+            
+        # Converte i vecchi dati in centesimi in decimi in memoria se necessario
+        for col in ["ironia", "post_ironia", "sincerita"]:
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+            
+        sums = df["ironia"] + df["post_ironia"] + df["sincerita"]
+        mask = sums > 15
+        if mask.any():
+            df.loc[mask, "ironia"] = df.loc[mask, "ironia"] / 10
+            df.loc[mask, "post_ironia"] = df.loc[mask, "post_ironia"] / 10
+            df.loc[mask, "sincerita"] = df.loc[mask, "sincerita"] / 10
+            
         return df
     except:
         return pd.DataFrame(columns=["nome", "tipo", "ironia", "post_ironia", "sincerita", "voti"])
@@ -85,7 +97,7 @@ st.markdown('<p class="main-title">🎨 Metamodern Plotter</p>', unsafe_allow_ht
 st.markdown("Visualizza l'anima dei media nel triangolo tra **Ironia**, **Post-Ironia** e **Sincerità**.")
 
 # 5. Logica di Interazione
-col1, col2 = st.columns([1, 2], gap="large")
+col1, col2 = st.columns([1, 3], gap="large")
 
 # Variabili di stato per il click
 selected_nome = ""
@@ -105,20 +117,21 @@ with col2:
         fig.update_traces(marker=dict(line=dict(width=2, color='white'), opacity=0.8))
         
         fig.update_layout(
+            height=700,
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
             ternary=dict(
-                sum=100,
+                sum=10,
                 aaxis=dict(
-                    title=dict(text="<b>IRONIA</b>", font=dict(size=18, color="#ff4b4b")), 
+                    title=dict(text="<b>IRONIA</b>", font=dict(size=18, color="#ff8c00")), 
                     min=0, showgrid=False
                 ),
                 baxis=dict(
-                    title=dict(text="<b>POST-IRONIA</b>", font=dict(size=18, color="#4b4bff")), 
+                    title=dict(text="<b>POST-IRONIA</b>", font=dict(size=18, color="#ffb347")), 
                     min=0, showgrid=False
                 ),
                 caxis=dict(
-                    title=dict(text="<b>SINCERITÀ</b>", font=dict(size=18, color="#4bff4b")), 
+                    title=dict(text="<b>SINCERITÀ</b>", font=dict(size=18, color="#ffcc00")), 
                     min=0, showgrid=False
                 ),
             ),
@@ -144,14 +157,15 @@ with col1:
     with st.container():
         with st.form("vote_form", clear_on_submit=True):
             nome_input = st.text_input("Titolo dell'opera", value=selected_nome, placeholder="Es. Interstellar").strip()
-            tipo_input = st.selectbox("Categoria", ["Film", "Libro", "Serie TV", "Videogioco", "Musica", "Altro"], 
-                                      index=["Film", "Libro", "Serie TV", "Videogioco", "Musica", "Altro"].index(selected_tipo))
+            categorie = ["Film", "Libro", "Serie TV", "Videogioco", "Musica", "Podcast", "Social", "Programma TV", "Esperienza Culturale", "Meme", "Altro"]
+            idx = categorie.index(selected_tipo) if selected_tipo in categorie else categorie.index("Altro")
+            tipo_input = st.selectbox("Categoria", categorie, index=idx)
             
             st.write("---")
-            st.markdown("**Bilanciamento (Somma = 100)**")
-            v_i = st.number_input("Quota Ironia", min_value=0, max_value=100, value=0)
-            v_p = st.number_input("Quota Post-Ironia", min_value=0, max_value=100, value=0)
-            v_s = st.number_input("Quota Sincerità", min_value=0, max_value=100, value=0)
+            st.markdown("**Bilanciamento (Somma = 10)**")
+            v_i = st.number_input("Quota Ironia", min_value=0, max_value=10, value=0)
+            v_p = st.number_input("Quota Post-Ironia", min_value=0, max_value=10, value=0)
+            v_s = st.number_input("Quota Sincerità", min_value=0, max_value=10, value=0)
             
             submitted = st.form_submit_button("REGISTRA VOTO")
 
@@ -159,8 +173,8 @@ with col1:
                 totale = v_i + v_p + v_s
                 if not nome_input:
                     st.warning("Inserisci un nome!")
-                elif totale != 100:
-                    st.error(f"La somma deve essere 100! (Totale attuale: {totale})")
+                elif totale != 10:
+                    st.error(f"La somma deve essere 10! (Totale attuale: {totale})")
                 else:
                     # Logica Aggiornamento/Inserimento
                     nome_esiste = df["nome"].str.lower() == nome_input.lower()
